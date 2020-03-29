@@ -1,16 +1,14 @@
 #include "BigN.h"
 
 int main() {
-    BigN a, b;
-    init(&a, 10);
-    init(&b, 10);
-    parse(&a, "99999999999999999");
-    print(&a);
-    parse(&b, "99999999999999999");
-    print(&b);
+    BigN *a, *b;
 
-    print(add(&a, &b));
+    a = parseBigN("0");
+    a->print(a);
+    b = parseBigN("0");
+    b->print(b);
 
+    printBigN(mulBigN(a, b));
 
     return 0;
 }

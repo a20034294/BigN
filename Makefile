@@ -1,5 +1,5 @@
 OBJECTS:= BigN.o
-CC := gcc -std=gnu99 -O2
+CC := gcc -std=gnu99 -O0
 
 all:
 	$(MAKE) test
