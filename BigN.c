@@ -1,12 +1,16 @@
 #include "BigN.h"
 
-#include <string.h>
+#include <linux/string.h>
+#include <linux/kernel.h>
+#include <linux/slab.h>
+#include <linux/printk.h>
+
 #define BLOCK_SIZE 9
 #define BLOCK_MAX 1000000000
 
 void initBigN(BigN *target, int size) {
     if (size) {
-        target->val = calloc(size, sizeof(int));
+        target->val = kcalloc(size, sizeof(int), GFP_KERNEL);
     }
     target->size = size;
 
@@ -19,15 +23,15 @@ void initBigN(BigN *target, int size) {
 }
 
 BigN *newBigN(int size) {
-    BigN *ret = malloc(sizeof(BigN));
+    BigN *ret = kmalloc(sizeof(BigN), GFP_KERNEL);
     initBigN(ret, size);
     return ret;
 }
 
 void freeBigN(BigN *target) {
     if (!target) return;
-    if (target->size) free(target->val);
-    free(target);
+    if (target->size) kfree(target->val);
+    kfree(target);
 }
 
 void resizeBigN(BigN *target, int size) {
@@ -35,38 +39,44 @@ void resizeBigN(BigN *target, int size) {
 
     if (size == 0) {
         if (target->size) {
-            free(target->val);
+            kfree(target->val);
         }
         target->val = NULL;
         target->size = size;
         return;
     }
-    int *val = calloc(sizeof(int), size);
+    int *val = kcalloc(sizeof(int), size, GFP_KERNEL);
 
     for (int i = 0; i < size && i < target->size; i++) {
         val[i] = target->val[i];
     }
     if (target->size) {
-        free(target->val);
+        kfree(target->val);
     }
     target->size = size;
     target->val = val;
 }
 
-void printBigN(BigN *this) {
-    int i;
+int sprintBigN(BigN *this, char *s) {
+    int i, len;
     if (!this->size) {
-        printf("0\n");
-        return;
+        len = sprintf(s, "0");
+        return len;
     }
     for (i = this->size - 1; i > 0 && this->val[i] == 0; i--)
         ;
 
-    printf("%d", this->val[i]);
+    len = sprintf(s, "%d", this->val[i]);
     while (i > 0) {
-        printf(" %09d", this->val[--i]);
+        len += sprintf(s + len, "%09d", this->val[--i]);
     }
-    printf("\n");
+    return len;
+}
+
+void printBigN(BigN *this) {
+    char *s = kmalloc(this->size * BLOCK_SIZE + 1, GFP_KERNEL);
+    sprintBigN(this, s);
+    printk(KERN_INFO "%s\n", s);
 }
 
 BigN *parseBigN(char *s) {
@@ -82,12 +92,12 @@ BigN *parseBigN(char *s) {
 
     strncpy(tmp, s, (len % BLOCK_SIZE) + 1);
 
-    ret->val[len / BLOCK_SIZE] = atoi(tmp);
+    ret->val[len / BLOCK_SIZE] = simple_strtol(tmp, NULL, 10);
     offset = (len % BLOCK_SIZE) + 1;
     for (int i = len / BLOCK_SIZE - 1; i >= 0; i--) {
         strncpy(tmp, s + offset, BLOCK_SIZE);
         tmp[BLOCK_SIZE] = '\0';
-        ret->val[i] = atoi(tmp);
+        ret->val[i] = simple_strtol(tmp, NULL, 10);
         // printf("%d ", ret->val[i]);
         offset += BLOCK_SIZE;
     }
@@ -150,15 +160,15 @@ void susToBigN(BigN *a, BigN *b) {  // a-=b;
         }
     }
     if (borrow) {
-        printf("出現負數了幹\n");
-        exit(0);
+        printk(KERN_ERR "出現負數了幹\n");
+        //exit(0);
     }
 }
 
 BigN *leftshiftBlockBigN(BigN *src, int num) {
     if (num < 0) {
-        printf("left shift must > 0\n");
-        exit(0);
+        printk(KERN_ERR "left shift must > 0\n");
+        //exit(0);
     }
 
     BigN *ret = newBigN(src->size + num);
