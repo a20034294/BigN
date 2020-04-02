@@ -1,8 +1,6 @@
 #ifndef BIGN_H
 #define BIGN_H
 
-#include <stdio.h>
-#include <stdlib.h>
 
 typedef struct _BigN {
     int size;
@@ -17,8 +15,10 @@ typedef struct _BigN {
 
 void initBigN(BigN *target, int size);
 BigN *newBigN(int size);
+void freeBigN(BigN* target);
 void resizeBigN(BigN *target, int size);
 BigN *parseBigN(char *s);
+int sprintBigN(BigN *this, char *s);
 void printBigN(BigN *this);
 BigN *addBigN(BigN *a, BigN *b);
 void susToBigN(BigN *a, BigN *b);
